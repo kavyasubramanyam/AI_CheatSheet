@@ -7,7 +7,25 @@ if "current_section" not in st.session_state:
     st.session_state.current_section = None
 
 # Set your OpenAI API key
+# Load environment variables
 load_dotenv()
+
+# Try to get API key from multiple sources
+api_key = None
+
+# First try Streamlit secrets
+try:
+    api_key = st.secrets["OPENAI_API_KEY"]
+except:
+    # If not in Streamlit secrets, try environment variable
+    api_key = os.getenv("OPENAI_API_KEY")
+
+if not api_key:
+    raise ValueError("OpenAI API key not found. Please set OPENAI_API_KEY in your environment or Streamlit secrets.")
+
+# Set the API key
+openai.api_key = api_key
+
 openai.api_key = os.getenv("OPENAI_API_KEY")
 
 cheat_sheet_function = {
