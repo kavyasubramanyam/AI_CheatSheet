@@ -8,6 +8,8 @@ if "current_section" not in st.session_state:
 
 # Set your OpenAI API key
 # Load environment variables
+
+# Load environment variables
 load_dotenv()
 
 # Try to get API key from multiple sources
@@ -23,7 +25,7 @@ except:
 if not api_key:
     raise ValueError("OpenAI API key not found. Please set OPENAI_API_KEY in your environment or Streamlit secrets.")
 
-# Set the API key
+# Set the API key (old style)
 openai.api_key = api_key
 
 openai.api_key = os.getenv("OPENAI_API_KEY")
