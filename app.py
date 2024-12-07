@@ -191,7 +191,7 @@ def main():
 
         # Input Section
         query = st.text_input("Ask a question:")
-        col1, col2 = st.columns([1, 4])
+        col1, col2 = st.columns([4, 1])
         with col1:
             if st.button("Submit"):
                 if query.strip():
@@ -212,10 +212,9 @@ def main():
                                 structured_response=structured_response,
                             )
                             
-                            # Rerun to update the chat display
-                            st.write(f"🧑 **You:** {query}")
+                                # update the chat display
                             st.write(f"🤖 **Assistant:** {answer}")
-                                        
+                                    
                         except Exception as e:
                             st.error(f"Error: {str(e)}")
         with col2:
