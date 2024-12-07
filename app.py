@@ -2,8 +2,6 @@ import streamlit as st
 from openAiHelper import get_openai_response, summarize_with_structure
 from CheatSheet import update_cheat_sheet, display_cheat_sheet
 from datetime import datetime
-
-
 if "cheat_sheets" not in st.session_state:
     st.session_state.cheat_sheets = {}
 if "current_cheat_sheet" not in st.session_state:
@@ -12,7 +10,6 @@ if "messages" not in st.session_state:
     st.session_state.messages = [
         {"role": "system", "content": "You are a knowledgeable tutor who maintains context across conversations. Build upon previous discussions and provide comprehensive, connected explanations."}
     ]
-
 def handle_cheat_sheet_query(query):
     """
     Process a user's query about a cheat sheet topic and update the cheat sheet accordingly.
@@ -21,22 +18,18 @@ def handle_cheat_sheet_query(query):
         with st.spinner("Processing..."):
             # Get the response from OpenAI
             answer = get_openai_response(query)
-
             # Summarize the response with structured content
             structured_response = summarize_with_structure(answer)
-
             # Update the cheat sheet with the new content
             update_cheat_sheet(
                 cheat_sheet_format=st.session_state.cheat_sheet_format,
                 question=query,
                 structured_response=structured_response
             )
-
             # Rerun to update the chat display
             st.rerun()
     except Exception as e:
         st.error(f"Error: {str(e)}")
-
 def display_chat_history():
     """Display the chat history in the interface."""
     for message in st.session_state.messages[1:]:  # Skip the system message
@@ -116,25 +109,21 @@ def save_current_cheat_sheet():
         st.session_state.current_cheat_sheet = key
         return True
     return False
-
 def load_cheat_sheet(key):
     """Load a selected cheat sheet"""
     if key in st.session_state.cheat_sheets:
         st.session_state.cheat_sheet_format = st.session_state.cheat_sheets[key].copy()
         st.session_state.current_cheat_sheet = key
-
 def manage_cheat_sheets():
     """Interface for managing multiple cheat sheets"""
     st.sidebar.markdown("---")
     st.sidebar.subheader("Cheat Sheet Manager")
-
     # Add New Cheat Sheet button at the top
     if st.sidebar.button("New Cheat Sheet"):
         st.session_state.cheat_sheet_format = {}  # Clear the current cheat sheet
         st.session_state.current_cheat_sheet = None
         st.session_state.messages = [st.session_state.messages[0]]  # Reset conversation but keep system message
         st.rerun()
-
     # Save current cheat sheet
     title = st.sidebar.text_input("Cheat Sheet Title", 
                                 key="current_title",
@@ -145,7 +134,6 @@ def manage_cheat_sheets():
             st.sidebar.success(f"Saved cheat sheet: {title}")
         else:
             st.sidebar.warning("No content to save!")
-
     # Display saved cheat sheets
     if st.session_state.cheat_sheets:
         st.sidebar.markdown("### Saved Cheat Sheets")
@@ -176,35 +164,26 @@ def manage_cheat_sheets():
                 st.rerun()
 def main():
     st.set_page_config(page_title="AI Tutor with Cheat Sheet", layout="wide")
-
     if "cheat_sheet_format" not in st.session_state:
         st.session_state.cheat_sheet_format = {}
-
     st.title("AI Tutor with Dynamic Cheat Sheet")
-
     # Create two columns
     chat_col, cheatsheet_col = st.columns([2, 1])
-
     with chat_col:
         # Display chat history
         display_chat_history()
-
         # Input Section
         query = st.text_input("Ask a question:")
-        col1, col2 = st.columns([4, 1])
+        col1, col2 = st.columns([1, 4])
         with col1:
             if st.button("Submit"):
                 if query.strip():
                     with st.spinner("Processing..."):
                         try:
-                            st.write(f"🧑 **You:** {query}")
-
                             # Fetch and display the response
                             answer = get_openai_response(query)
-
                             # Summarize with context
                             structured_response = summarize_with_structure(answer)
-
                             # Update the cheat sheet
                             update_cheat_sheet(
                                 cheat_sheet_format=st.session_state.cheat_sheet_format,
@@ -212,22 +191,19 @@ def main():
                                 structured_response=structured_response,
                             )
                             
-                                # update the chat display
-                            st.write(f"🤖 **Assistant:** {answer}")
-                                    
+                            # Rerun to update the chat display
+                            
                         except Exception as e:
                             st.error(f"Error: {str(e)}")
         with col2:
             if st.button("Clear Conversation"):
                 st.session_state.messages = [st.session_state.messages[0]]  # Keep only the system message
                 st.rerun()
-
     with cheatsheet_col:
         # Display current cheat sheet
         display_cheat_sheet(st.session_state.cheat_sheet_format)
         
         # Add the cheat sheet manager
         manage_cheat_sheets()
-
 if __name__ == "__main__":
     main()
