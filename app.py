@@ -197,6 +197,8 @@ def main():
                 if query.strip():
                     with st.spinner("Processing..."):
                         try:
+                            st.write(f"🧑 **You:** {query}")
+
                             # Fetch and display the response
                             answer = get_openai_response(query)
 
@@ -211,8 +213,9 @@ def main():
                             )
                             
                             # Rerun to update the chat display
-                            st.rerun()
-                            
+                            st.write(f"🧑 **You:** {query}")
+                            st.write(f"🤖 **Assistant:** {answer}")
+                                        
                         except Exception as e:
                             st.error(f"Error: {str(e)}")
         with col2:
