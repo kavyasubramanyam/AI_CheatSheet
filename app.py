@@ -166,24 +166,37 @@ def main():
     st.set_page_config(page_title="AI Tutor with Cheat Sheet", layout="wide")
     if "cheat_sheet_format" not in st.session_state:
         st.session_state.cheat_sheet_format = {}
+
     st.title("AI Tutor with Dynamic Cheat Sheet")
+    
     # Create two columns
     chat_col, cheatsheet_col = st.columns([2, 1])
+    
     with chat_col:
         # Display chat history
         display_chat_history()
+        
         # Input Section
         query = st.text_input("Ask a question:")
         col1, col2 = st.columns([1, 4])
+        
         with col1:
             if st.button("Submit"):
                 if query.strip():
                     with st.spinner("Processing..."):
                         try:
-                            # Fetch and display the response
+                            # Store the user's message
+                            st.session_state.messages.append({"role": "user", "content": query})
+                            
+                            # Fetch the response
                             answer = get_openai_response(query)
+                            
+                            # Store the assistant's response
+                            st.session_state.messages.append({"role": "assistant", "content": answer})
+                            
                             # Summarize with context
                             structured_response = summarize_with_structure(answer)
+                            
                             # Update the cheat sheet
                             update_cheat_sheet(
                                 cheat_sheet_format=st.session_state.cheat_sheet_format,
@@ -191,19 +204,10 @@ def main():
                                 structured_response=structured_response,
                             )
                             
-                            # Rerun to update the chat display
+                            # Rerun to update the display
+                            st.rerun()
                             
                         except Exception as e:
                             st.error(f"Error: {str(e)}")
-        with col2:
-            if st.button("Clear Conversation"):
-                st.session_state.messages = [st.session_state.messages[0]]  # Keep only the system message
-                st.rerun()
-    with cheatsheet_col:
-        # Display current cheat sheet
-        display_cheat_sheet(st.session_state.cheat_sheet_format)
-        
-        # Add the cheat sheet manager
-        manage_cheat_sheets()
 if __name__ == "__main__":
     main()
