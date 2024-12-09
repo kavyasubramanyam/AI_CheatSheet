@@ -81,15 +81,6 @@ def display_chat_history():
         st.markdown("---")
 
             
-def save_current_cheat_sheet():
-    if st.session_state.cheat_sheet_format:  # Only save if there's content
-        timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        title = st.session_state.get("current_title", "Untitled Cheat Sheet")
-        key = f"{title} ({timestamp})"
-        st.session_state.cheat_sheets[key] = st.session_state.cheat_sheet_format.copy()
-        st.session_state.current_cheat_sheet = key
-        return True
-    return False
 def load_cheat_sheet(key): #load prev cheet sheet from key 
     if key in st.session_state.cheat_sheets:
         st.session_state.cheat_sheet_format = st.session_state.cheat_sheets[key].copy()
@@ -98,22 +89,30 @@ def manage_cheat_sheets():
     """Interface for managing multiple cheat sheets"""
     st.sidebar.markdown("---")
     st.sidebar.subheader("Cheat Sheet Manager")
-    if st.sidebar.button("New Cheat Sheet"): # add new cheat sheet
-        st.session_state.cheat_sheet_format = {}  #clear curr cheat sheet
+    
+    if st.sidebar.button("New Cheat Sheet"):
+        # Save current cheat sheet before creating new one
+        if st.session_state.get("cheat_sheet_format"):
+            save_current_cheat_sheet()
+            
+        # Clear current cheat sheet and reset conversation
+        st.session_state.cheat_sheet_format = {}
         st.session_state.current_cheat_sheet = None
-        st.session_state.messages = [st.session_state.messages[0]]  # reset convo
+        st.session_state.messages = [st.session_state.messages[0]]  # Keep only system message
+        st.session_state.current_title = "Untitled Cheat Sheet"  # Reset title
         st.rerun()
     
     title = st.sidebar.text_input("Cheat Sheet Title", 
                                 key="current_title",
-                                value="Untitled Cheat Sheet")
+                                value=st.session_state.get("current_title", "Untitled Cheat Sheet"))
     
     if st.sidebar.button("Save Current Cheat Sheet"):
         if save_current_cheat_sheet():
             st.sidebar.success(f"Saved cheat sheet: {title}")
         else:
             st.sidebar.warning("No content to save!")
-    # list all cheat sheets
+            
+    # List all cheat sheets
     if st.session_state.cheat_sheets:
         st.sidebar.markdown("### Saved Cheat Sheets")
         selected_sheet = st.sidebar.selectbox(
@@ -128,7 +127,6 @@ def manage_cheat_sheets():
         with col1:
             if st.button("Load Selected"):
                 load_cheat_sheet(selected_sheet)
-                # reset convo when loading a previous cheat sheet
                 st.session_state.messages = [st.session_state.messages[0]]
                 st.success(f"Loaded: {selected_sheet}")
                 st.rerun()
@@ -141,14 +139,29 @@ def manage_cheat_sheets():
                 del st.session_state.cheat_sheets[selected_sheet]
                 st.success(f"Deleted: {selected_sheet}")
                 st.rerun()
+def save_current_cheat_sheet():
+    """Save the current cheat sheet with proper title handling"""
+    if st.session_state.cheat_sheet_format:  # Only save if there's content
+        timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        title = st.session_state.get("current_title", "Untitled Cheat Sheet")
+        key = f"{title} ({timestamp})"
+        st.session_state.cheat_sheets[key] = st.session_state.cheat_sheet_format.copy()
+        st.session_state.current_cheat_sheet = key
+        return True
+    return False
+
 def main():
     st.set_page_config(page_title="AI Tutor with Cheat Sheet", layout="wide")
+    
+    # Initialize session state variables
     if "cheat_sheet_format" not in st.session_state:
         st.session_state.cheat_sheet_format = {}
     if "messages" not in st.session_state:
         st.session_state.messages = [
             {"role": "system", "content": "You are a knowledgeable tutor who maintains context across conversations. Build upon previous discussions and provide comprehensive, connected explanations."}
         ]
+    if "current_title" not in st.session_state:
+        st.session_state.current_title = "Untitled Cheat Sheet"
 
     st.title("AI Tutor with Dynamic Cheat Sheet")
     
