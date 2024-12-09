@@ -126,7 +126,7 @@ def manage_cheat_sheets():
         if "current_title" in st.session_state:
             del st.session_state.current_title
             
-        st.experimental_rerun()
+        st.rerun()
 
     # Title input with forced default value when needed
     current_title = st.session_state.get("current_title", "Untitled Cheat Sheet")
@@ -164,7 +164,7 @@ def manage_cheat_sheets():
             if st.button("Load Selected", key="load_button"):
                 load_cheat_sheet(selected_sheet)
                 st.session_state.messages = [st.session_state.messages[0]]
-                st.experimental_rerun()
+                st.rerun()
 
         with col2:
             if st.button("Delete Selected", key="delete_button"):
@@ -172,7 +172,7 @@ def manage_cheat_sheets():
                     st.session_state.cheat_sheet_format = {}
                     st.session_state.current_cheat_sheet = None
                 del st.session_state.cheat_sheets[selected_sheet]
-                st.experimental_rerun()
+                st.rerun()
 
 def main():
     st.set_page_config(page_title="AI Tutor with Cheat Sheet", layout="wide")
