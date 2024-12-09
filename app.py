@@ -19,8 +19,6 @@ def display_chat_history():
 
     for message in messages_to_display:  
         if message["role"] == "user":
-            st.write(f"🧑 **You:** {message['content']}")
-        elif message["role"] == "assistant":
             content = message['content'].strip()
             
             # Replace LaTeX-style math notation
@@ -75,6 +73,10 @@ def display_chat_history():
             
             formatted_content = '\n'.join(formatted_lines)
             st.write(f"🤖 **Assistant:** {formatted_content}")
+        elif message["role"] == "user":
+            st.write(f"🧑 **You:** {message['content']}")
+            st.markdown("---")
+
             
 def save_current_cheat_sheet():
     """Save the current cheat sheet with a timestamp"""
