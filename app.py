@@ -18,7 +18,7 @@ def display_chat_history():
     messages_to_display = list(reversed(st.session_state.messages[1:]))
 
     for message in messages_to_display:  
-        if message["role"] == "user":
+        if message["role"] == "assistant":
             content = message['content'].strip()
             
             # Replace LaTeX-style math notation
