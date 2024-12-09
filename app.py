@@ -149,6 +149,11 @@ def main():
     if "cheat_sheet_format" not in st.session_state:
         st.session_state.cheat_sheet_format = {}
 
+    if "messages" not in st.session_state:
+        st.session_state.messages = [
+            {"role": "system", "content": "You are a knowledgeable tutor who maintains context across conversations. Build upon previous discussions and provide comprehensive, connected explanations."}
+        ]
+
     st.title("AI Tutor with Dynamic Cheat Sheet")
     
     # Create two columns
@@ -183,6 +188,11 @@ def main():
                     question=query,
                     structured_response=structured_response,
                 )
+                 # Clear the form
+                query = ""
+        
+        # Display chat history after form submission
+        display_chat_history()
         
         if st.button("Clear Conversation"):
             st.session_state.messages = [
