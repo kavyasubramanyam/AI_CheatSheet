@@ -166,6 +166,8 @@ def main():
     st.set_page_config(page_title="AI Tutor with Cheat Sheet", layout="wide")
     if "cheat_sheet_format" not in st.session_state:
         st.session_state.cheat_sheet_format = {}
+    if "submitted" not in st.session_state:
+        st.session_state.submitted = False
 
     st.title("AI Tutor with Dynamic Cheat Sheet")
     
@@ -173,7 +175,7 @@ def main():
     chat_col, cheatsheet_col = st.columns([2, 1])
     
     with chat_col:
-        # Display chat history
+        # Display chat history first
         display_chat_history()
         
         # Create a form for the input
@@ -183,34 +185,43 @@ def main():
             
             with col1:
                 submit_button = st.form_submit_button("Submit")
-            
-            if submit_button and query.strip():
-                try:
-                    with st.spinner("Processing..."):
-                        # Store the user's message
-                        st.session_state.messages.append({"role": "user", "content": query})
-                        
-                        # Fetch the response
-                        answer = get_openai_response(query)
-                        
-                        # Store the assistant's response
-                        st.session_state.messages.append({"role": "assistant", "content": answer})
-                        
-                        # Summarize with context
-                        structured_response = summarize_with_structure(answer)
-                        
-                        # Update the cheat sheet
-                        update_cheat_sheet(
-                            cheat_sheet_format=st.session_state.cheat_sheet_format,
-                            question=query,
-                            structured_response=structured_response,
-                        )
-                        
-                except Exception as e:
-                    st.error(f"Error: {str(e)}")
+        
+        # Handle form submission outside the form
+        if submit_button and query.strip():
+            try:
+                with st.spinner("Processing..."):
+                    # Store the user's message
+                    st.session_state.messages.append({"role": "user", "content": query})
+                    
+                    # Fetch the response
+                    answer = get_openai_response(query)
+                    
+                    # Store the assistant's response
+                    st.session_state.messages.append({"role": "assistant", "content": answer})
+                    
+                    # Summarize with context
+                    structured_response = summarize_with_structure(answer)
+                    
+                    # Update the cheat sheet
+                    update_cheat_sheet(
+                        cheat_sheet_format=st.session_state.cheat_sheet_format,
+                        question=query,
+                        structured_response=structured_response,
+                    )
+                    
+                    # Set submitted flag
+                    st.session_state.submitted = True
+                    
+                    # Force a rerun to update the display
+                    st.rerun()
+                    
+            except Exception as e:
+                st.error(f"Error: {str(e)}")
         
         if st.button("Clear Conversation"):
             st.session_state.messages = [st.session_state.messages[0]]  # Keep only the system message
+            st.session_state.submitted = False
+            st.rerun()
 
     with cheatsheet_col:
         # Display current cheat sheet
@@ -218,5 +229,9 @@ def main():
         
         # Add the cheat sheet manager
         manage_cheat_sheets()
+
+    # Reset submitted flag at the end
+    if st.session_state.submitted:
+        st.session_state.submitted = False
 if __name__ == "__main__":
     main()
