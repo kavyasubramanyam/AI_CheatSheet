@@ -14,7 +14,10 @@ if "messages" not in st.session_state:
 def display_chat_history():
     """Display the chat history in the interface."""
     # Skip the first system message
-    for message in st.session_state.messages[1:]:  
+
+    messages_to_display = list(reversed(st.session_state.messages[1:]))
+
+    for message in messages_to_display:  
         if message["role"] == "user":
             st.write(f"🧑 **You:** {message['content']}")
         elif message["role"] == "assistant":
