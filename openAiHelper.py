@@ -1,17 +1,10 @@
 import openai
 import json
 import streamlit as st
-import os
-from dotenv import load_dotenv
+
+
 if "current_section" not in st.session_state:
     st.session_state.current_section = None
-
-# Set your OpenAI API key
-# Load environment variables
-
-# Load environment variables
-load_dotenv()
-
 # Try to get API key from multiple sources
 api_key = None
 
@@ -19,57 +12,11 @@ api_key = None
 
 api_key = st.secrets["OPENAI_API_KEY"]
 
-# Set the API key (old style)
 openai.api_key = api_key
 
 
-cheat_sheet_function = {
-    "name": "generate_cheat_sheet",
-    "description": "Creates a structured cheat sheet with support for deeply nested information",
-    "parameters": {
-        "type": "object",
-        "properties": {
-            "sections": {
-                "type": "object",
-                "description": "Main sections of the cheat sheet",
-                "additionalProperties": {
-                    "type": "object",
-                    "description": "Topics within a section",
-                    "additionalProperties": {
-                        "oneOf": [
-                            {
-                                "type": "string",
-                                "description": "Direct content"
-                            },
-                            {
-                                "type": "object",
-                                "description": "Nested subsections",
-                                "additionalProperties": {
-                                    "oneOf": [
-                                        {
-                                            "type": "string",
-                                            "description": "Subsection content"
-                                        },
-                                        {
-                                            "type": "object",
-                                            "description": "Further nested content",
-                                            "additionalProperties": {}
-                                        }
-                                    ]
-                                }
-                            }
-                        ]
-                    }
-                }
-            }
-        },
-        "required": ["sections"]
-    }
-}
 def get_openai_response(query):
-    """
-    Gets a response from OpenAI with conversation history.
-    """
+
     try:
         # Get completion from OpenAI
         response = openai.chat.completions.create(

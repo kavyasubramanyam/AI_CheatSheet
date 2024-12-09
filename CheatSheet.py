@@ -8,22 +8,20 @@ def clean_text(text):
     if text is None:
         return ""
     
-    # Convert to string and clean
+    # make sure input is a string
     cleaned = str(text)
-    # Remove JSON formatting characters
+    # parse JSON
     cleaned = cleaned.replace('{', '').replace('}', '')
     cleaned = cleaned.replace('[', '').replace(']', '')
     cleaned = cleaned.replace('\'', '').replace('\"', '')
     cleaned = cleaned.replace('\\', '')
-    # Remove extra whitespace
     cleaned = ' '.join(cleaned.split())
     return cleaned.strip()
 
 def create_cheat_sheet_docx(cheat_sheet_data, font="Calibri", font_size=11):
-    """Creates a Word document for the cheat sheet"""
-    doc = Document()
+    doc = Document() #word doc
 
-    # Set margins
+    # page setup
     for section in doc.sections:
         section.top_margin = Inches(0.8)
         section.bottom_margin = Inches(0.8)
@@ -31,15 +29,16 @@ def create_cheat_sheet_docx(cheat_sheet_data, font="Calibri", font_size=11):
         section.right_margin = Inches(0.8)
 
     try:
-        # Process each section
+        #go through each section of the structured response
         for section_name, content in cheat_sheet_data.items():
-            # Add section heading
+            # create a heading for the section
             section = doc.add_heading(clean_text(section_name), level=1)
             section.style.font.name = font
             section.style.font.size = Pt(font_size + 2)
             section.paragraph_format.space_before = Pt(3)
             section.paragraph_format.space_after = Pt(3)
 
+            #add content from dictionary
             if isinstance(content, dict):
                 for subsection, details in content.items():
                     subsection_para = doc.add_paragraph()
@@ -47,6 +46,7 @@ def create_cheat_sheet_docx(cheat_sheet_data, font="Calibri", font_size=11):
                     run.bold = True
                     run.font.size = Pt(font_size)
                     
+                    #check if the details are code or bullet point info
                     if isinstance(details, dict):
                         for key, value in details.items():
                             if key == "Code":
@@ -73,7 +73,6 @@ def create_cheat_sheet_docx(cheat_sheet_data, font="Calibri", font_size=11):
                         detail_para.paragraph_format.space_before = Pt(3)
                         detail_para.paragraph_format.space_after = Pt(3)
             else:
-                # Handle direct content
                 para = doc.add_paragraph(clean_text(content))
                 para.style.font.size = Pt(font_size)
                 para.paragraph_format.space_before = Pt(3)
@@ -83,14 +82,13 @@ def create_cheat_sheet_docx(cheat_sheet_data, font="Calibri", font_size=11):
         print(f"Document creation error: {str(e)}")
         raise
 
-    # Save document
+    # save doc
     doc_buffer = BytesIO()
     doc.save(doc_buffer)
     doc_buffer.seek(0)
     return doc_buffer
 
 def update_cheat_sheet(cheat_sheet_format, question, structured_response):
-    """Updates the cheat sheet with new content"""
     def deep_merge(target, source):
         for key, value in source.items():
             if key in target:
@@ -137,7 +135,7 @@ def display_cheat_sheet(cheat_sheet_data):
             else:
                 st.sidebar.markdown(clean_text(topics))
 
-        # Generate and download the cheat sheet
+        # download the cheat sheet
         with st.spinner("Preparing download..."):
             try:
                 # title = next(iter(cheat_sheet_data.keys()))

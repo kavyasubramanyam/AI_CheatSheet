@@ -13,31 +13,26 @@ if "messages" not in st.session_state:
 
 def display_chat_history():
     """Display the chat history in the interface with most recent messages at the top."""
-    # Get all messages except the system message
     messages_to_display = st.session_state.messages[1:]
     
-    # Group messages into conversation pairs and reverse the list
     conversation_pairs = []
     for i in range(0, len(messages_to_display), 2):
-        if i + 1 < len(messages_to_display):  # Make sure we have both question and answer
+        if i + 1 < len(messages_to_display):  
             conversation_pairs.append((messages_to_display[i], messages_to_display[i + 1]))
     
-    # Display messages in reverse order, with each question above its answer
     for user_msg, assistant_msg in reversed(conversation_pairs):
-        # Display user message first
+        # display user message
         st.write(f"🧑 **You:** {user_msg['content']}")
-        
-        # Display assistant message
+        # display response
         content = assistant_msg['content'].strip()
         
-        # Replace LaTeX-style math notation
+        # latex formatting
         content = content.replace('\\[', '$$')
         content = content.replace('\\]', '$$')
         content = content.replace('\\(', '$')
         content = content.replace('\\)', '$')
         content = content.replace('\\mathbb{R}', 'ℝ')
         
-        # Handle math replacements
         math_replacements = {
             '\\times': '×',
             '\\in': '∈',
@@ -60,7 +55,7 @@ def display_chat_history():
         for latex, symbol in math_replacements.items():
             content = content.replace(latex, symbol)
         
-        # Handle code blocks
+        # code formatting
         lines = content.split('\n')
         formatted_lines = []
         in_code_block = False
@@ -83,12 +78,10 @@ def display_chat_history():
         formatted_content = '\n'.join(formatted_lines)
         st.write(f"🤖 **Assistant:** {formatted_content}")
         
-        # Add a divider between conversations
         st.markdown("---")
 
             
 def save_current_cheat_sheet():
-    """Save the current cheat sheet with a timestamp"""
     if st.session_state.cheat_sheet_format:  # Only save if there's content
         timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         title = st.session_state.get("current_title", "Untitled Cheat Sheet")
@@ -97,8 +90,7 @@ def save_current_cheat_sheet():
         st.session_state.current_cheat_sheet = key
         return True
     return False
-def load_cheat_sheet(key):
-    """Load a selected cheat sheet"""
+def load_cheat_sheet(key): #load prev cheet sheet from key 
     if key in st.session_state.cheat_sheets:
         st.session_state.cheat_sheet_format = st.session_state.cheat_sheets[key].copy()
         st.session_state.current_cheat_sheet = key
@@ -106,13 +98,12 @@ def manage_cheat_sheets():
     """Interface for managing multiple cheat sheets"""
     st.sidebar.markdown("---")
     st.sidebar.subheader("Cheat Sheet Manager")
-    # Add New Cheat Sheet button at the top
-    if st.sidebar.button("New Cheat Sheet"):
-        st.session_state.cheat_sheet_format = {}  # Clear the current cheat sheet
+    if st.sidebar.button("New Cheat Sheet"): # add new cheat sheet
+        st.session_state.cheat_sheet_format = {}  #clear curr cheat sheet
         st.session_state.current_cheat_sheet = None
-        st.session_state.messages = [st.session_state.messages[0]]  # Reset conversation but keep system message
+        st.session_state.messages = [st.session_state.messages[0]]  # reset convo
         st.rerun()
-    # Save current cheat sheet
+    
     title = st.sidebar.text_input("Cheat Sheet Title", 
                                 key="current_title",
                                 value="Untitled Cheat Sheet")
@@ -122,7 +113,7 @@ def manage_cheat_sheets():
             st.sidebar.success(f"Saved cheat sheet: {title}")
         else:
             st.sidebar.warning("No content to save!")
-    # Display saved cheat sheets
+    # list all cheat sheets
     if st.session_state.cheat_sheets:
         st.sidebar.markdown("### Saved Cheat Sheets")
         selected_sheet = st.sidebar.selectbox(
@@ -137,7 +128,7 @@ def manage_cheat_sheets():
         with col1:
             if st.button("Load Selected"):
                 load_cheat_sheet(selected_sheet)
-                # Reset conversation when loading a different cheat sheet
+                # reset convo when loading a previous cheat sheet
                 st.session_state.messages = [st.session_state.messages[0]]
                 st.success(f"Loaded: {selected_sheet}")
                 st.rerun()
@@ -161,13 +152,10 @@ def main():
 
     st.title("AI Tutor with Dynamic Cheat Sheet")
     
-    # Create two columns
+    # chat and cheat columns
     chat_col, cheatsheet_col = st.columns([2, 1])
     
-    with chat_col:
-        # Create placeholder for chat history
-        chat_placeholder = st.empty()
-        
+    with chat_col:        
         # Create a form for the input
         with st.form(key='query_form', clear_on_submit=True):
             query = st.text_input("Ask a question:", key="query_input")
@@ -177,16 +165,14 @@ def main():
                 submitted = st.form_submit_button("Submit")
             
             if submitted and query.strip():
-                # Add user message
+                # add query to the session
                 st.session_state.messages.append({"role": "user", "content": query})
-                
-                # Get response
                 answer = get_openai_response(query)
                 
-                # Add assistant message
+                # add the answer to the session
                 st.session_state.messages.append({"role": "assistant", "content": answer})
                 
-                # Update cheat sheet
+                # update the cheat sheet with parsed answer
                 structured_response = summarize_with_structure(answer)
                 update_cheat_sheet(
                     cheat_sheet_format=st.session_state.cheat_sheet_format,
@@ -194,20 +180,19 @@ def main():
                     structured_response=structured_response,
                 )
                 
-                # Clear the form
+                # zero out form
                 query = ""
         
-        # Display chat history after form submission
+        # display history once submitted
         display_chat_history()
         
+        #clear all messages if pressed
         if st.button("Clear Conversation"):
             st.session_state.messages = [st.session_state.messages[0]]
 
     with cheatsheet_col:
-        # Display current cheat sheet
         display_cheat_sheet(st.session_state.cheat_sheet_format)
-        
-        # Add the cheat sheet manager
         manage_cheat_sheets()
+        
 if __name__ == "__main__":
     main()
