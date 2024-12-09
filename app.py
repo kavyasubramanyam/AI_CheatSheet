@@ -209,5 +209,15 @@ def main():
                             
                         except Exception as e:
                             st.error(f"Error: {str(e)}")
+            with col2:
+                if st.button("Clear Conversation"):
+                    st.session_state.messages = [st.session_state.messages[0]]  # Keep only the system message
+                    st.rerun()
+        with cheatsheet_col:
+            # Display current cheat sheet
+            display_cheat_sheet(st.session_state.cheat_sheet_format)
+            
+            # Add the cheat sheet manager
+            manage_cheat_sheets()
 if __name__ == "__main__":
     main()
