@@ -12,70 +12,79 @@ if "messages" not in st.session_state:
     ]
 
 def display_chat_history():
-    """Display the chat history in the interface."""
-    # Skip the first system message
-
-    messages_to_display = list(reversed(st.session_state.messages[1:]))
-
-    for message in messages_to_display:  
-        if message["role"] == "assistant":
-            content = message['content'].strip()
-            
-            # Replace LaTeX-style math notation
-            content = content.replace('\\[', '$$')
-            content = content.replace('\\]', '$$')
-            content = content.replace('\\(', '$')
-            content = content.replace('\\)', '$')
-            content = content.replace('\\mathbb{R}', 'ℝ')
-            
-            # Handle math replacements
-            math_replacements = {
-                '\\times': '×',
-                '\\in': '∈',
-                '\\rightarrow': '→',
-                '\\leftarrow': '←',
-                '\\leq': '≤',
-                '\\geq': '≥',
-                '\\neq': '≠',
-                '\\alpha': 'α',
-                '\\beta': 'β',
-                '\\gamma': 'γ',
-                '\\delta': 'δ',
-                '\\theta': 'θ',
-                '\\lambda': 'λ',
-                '\\sigma': 'σ',
-                '\\pi': 'π',
-                '\\infty': '∞'
-            }
-            
-            for latex, symbol in math_replacements.items():
-                content = content.replace(latex, symbol)
-            
-            # Handle code blocks
-            lines = content.split('\n')
-            formatted_lines = []
-            in_code_block = False
-            code_buffer = []
-            
-            for line in lines:
-                if line.strip().startswith('```'):
-                    if in_code_block:
-                        in_code_block = False
-                        if code_buffer:
-                            formatted_lines.append(f"```python\n{''.join(code_buffer)}```")
-                            code_buffer = []
-                    else:
-                        in_code_block = True
-                elif in_code_block:
-                    code_buffer.append(line + '\n')
+    """Display the chat history in the interface with most recent messages at the top."""
+    # Get all messages except the system message
+    messages_to_display = st.session_state.messages[1:]
+    
+    # Group messages into conversation pairs and reverse the list
+    conversation_pairs = []
+    for i in range(0, len(messages_to_display), 2):
+        if i + 1 < len(messages_to_display):  # Make sure we have both question and answer
+            conversation_pairs.append((messages_to_display[i], messages_to_display[i + 1]))
+    
+    # Display messages in reverse order, with each question above its answer
+    for user_msg, assistant_msg in reversed(conversation_pairs):
+        # Display user message first
+        st.write(f"🧑 **You:** {user_msg['content']}")
+        
+        # Display assistant message
+        content = assistant_msg['content'].strip()
+        
+        # Replace LaTeX-style math notation
+        content = content.replace('\\[', '$$')
+        content = content.replace('\\]', '$$')
+        content = content.replace('\\(', '$')
+        content = content.replace('\\)', '$')
+        content = content.replace('\\mathbb{R}', 'ℝ')
+        
+        # Handle math replacements
+        math_replacements = {
+            '\\times': '×',
+            '\\in': '∈',
+            '\\rightarrow': '→',
+            '\\leftarrow': '←',
+            '\\leq': '≤',
+            '\\geq': '≥',
+            '\\neq': '≠',
+            '\\alpha': 'α',
+            '\\beta': 'β',
+            '\\gamma': 'γ',
+            '\\delta': 'δ',
+            '\\theta': 'θ',
+            '\\lambda': 'λ',
+            '\\sigma': 'σ',
+            '\\pi': 'π',
+            '\\infty': '∞'
+        }
+        
+        for latex, symbol in math_replacements.items():
+            content = content.replace(latex, symbol)
+        
+        # Handle code blocks
+        lines = content.split('\n')
+        formatted_lines = []
+        in_code_block = False
+        code_buffer = []
+        
+        for line in lines:
+            if line.strip().startswith('```'):
+                if in_code_block:
+                    in_code_block = False
+                    if code_buffer:
+                        formatted_lines.append(f"```python\n{''.join(code_buffer)}```")
+                        code_buffer = []
                 else:
-                    formatted_lines.append(line)
-            
-            formatted_content = '\n'.join(formatted_lines)
-            st.write(f"🤖 **Assistant:** {formatted_content}")
-        elif message["role"] == "user":
-            st.write(f"🧑 **You:** {message['content']}")
-            st.markdown("---")
+                    in_code_block = True
+            elif in_code_block:
+                code_buffer.append(line + '\n')
+            else:
+                formatted_lines.append(line)
+        
+        formatted_content = '\n'.join(formatted_lines)
+        st.write(f"🤖 **Assistant:** {formatted_content}")
+        
+        # Add a divider between conversations
+        st.markdown("---")
 
             
 def save_current_cheat_sheet():
