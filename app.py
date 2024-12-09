@@ -174,6 +174,7 @@ def main():
                 
                 # Store the assistant's response
                 st.session_state.messages.append({"role": "assistant", "content": answer})
+                st.write(answer)
                 
                 # Update the cheat sheet
                 structured_response = summarize_with_structure(answer)
