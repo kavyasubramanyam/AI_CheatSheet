@@ -163,31 +163,36 @@ def manage_cheat_sheets():
                 st.success(f"Deleted: {selected_sheet}")
                 st.rerun()
 def handle_submit():
+    """Handle submission from either Enter key or Submit button"""
     if "user_input" in st.session_state and st.session_state.user_input.strip():
-        # Get the query from session state
-        query = st.session_state.user_input
-        
-        # Store the user's message
-        st.session_state.messages.append({"role": "user", "content": query})
-        
-        # Fetch the response
-        answer = get_openai_response(query)
-        
-        # Store the assistant's response
-        st.session_state.messages.append({"role": "assistant", "content": answer})
-        
-        # Summarize with context
-        structured_response = summarize_with_structure(answer)
-        
-        # Update the cheat sheet
-        update_cheat_sheet(
-            cheat_sheet_format=st.session_state.cheat_sheet_format,
-            question=query,
-            structured_response=structured_response,
-        )
-        
-        # Clear the input by setting it to empty string
-        st.session_state.user_input = ""
+        try:
+            # Get the query from session state
+            query = st.session_state.user_input
+            
+            # Store the user's message
+            st.session_state.messages.append({"role": "user", "content": query})
+            
+            # Fetch the response
+            answer = get_openai_response(query)
+            
+            # Store the assistant's response
+            st.session_state.messages.append({"role": "assistant", "content": answer})
+            
+            # Summarize with context
+            structured_response = summarize_with_structure(answer)
+            
+            # Update the cheat sheet
+            update_cheat_sheet(
+                cheat_sheet_format=st.session_state.cheat_sheet_format,
+                question=query,
+                structured_response=structured_response,
+            )
+            
+            # Clear the input
+            st.session_state.user_input = ""
+            
+        except Exception as e:
+            st.error(f"Error: {str(e)}")
 
 def main():
     st.set_page_config(page_title="AI Tutor with Cheat Sheet", layout="wide")
@@ -203,10 +208,14 @@ def main():
         # Display chat history
         display_chat_history()
         
-        # Input Section
+        # Input Section with both Enter key and button support
         st.text_input("Ask a question:", key="user_input", on_change=handle_submit)
         
         col1, col2 = st.columns([1, 4])
+        
+        with col1:
+            if st.button("Submit"):
+                handle_submit()
         
         with col2:
             if st.button("Clear Conversation"):
