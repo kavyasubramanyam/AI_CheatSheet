@@ -113,8 +113,10 @@ def update_cheat_sheet(cheat_sheet_format, question, structured_response):
         print(f"Update error: {str(e)}")
 
 def display_cheat_sheet(cheat_sheet_data):
-    """Display the cheat sheet in the sidebar"""
     st.sidebar.title("Cheat Sheet")
+    
+    # Add a debug print to verify the data is actually empty
+    print("Current cheat sheet data:", cheat_sheet_data)
     
     if not cheat_sheet_data:
         st.sidebar.write("No cheat sheet yet. Start asking questions!")

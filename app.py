@@ -109,11 +109,8 @@ def manage_cheat_sheets():
     st.sidebar.markdown("---")
     st.sidebar.subheader("Cheat Sheet Manager")
 
-    # Create a unique key for the New Cheat Sheet button
     if st.sidebar.button("New Cheat Sheet", key="new_sheet_button"):
-        # First save current sheet if it exists and has content
-        if st.session_state.get("cheat_sheet_format"):
-            save_current_cheat_sheet()
+
         
         # Clear all relevant session state
         st.session_state.cheat_sheet_format = {}
@@ -121,11 +118,7 @@ def manage_cheat_sheets():
         st.session_state.messages = [
             {"role": "system", "content": "You are a knowledgeable tutor who maintains context across conversations. Build upon previous discussions and provide comprehensive, connected explanations."}
         ]
-        
-        # Force clear the title
-        if "current_title" in st.session_state:
-            del st.session_state.current_title
-            
+        st.session_state.current_title = "Untitled Cheat Sheet"
         st.rerun()
 
     # Title input with forced default value when needed
@@ -147,10 +140,14 @@ def manage_cheat_sheets():
     if st.session_state.cheat_sheets:
         st.sidebar.markdown("### Saved Cheat Sheets")
         sheet_options = list(st.session_state.cheat_sheets.keys())
-        current_index = (sheet_options.index(st.session_state.current_cheat_sheet) 
-                        if st.session_state.current_cheat_sheet in sheet_options 
-                        else 0)
         
+        try:
+            current_index = (sheet_options.index(st.session_state.current_cheat_sheet) 
+                           if st.session_state.current_cheat_sheet in sheet_options 
+                           else 0)
+        except (ValueError, IndexError):
+            current_index = 0
+            
         selected_sheet = st.sidebar.selectbox(
             "Select a cheat sheet to load",
             options=sheet_options,
@@ -173,7 +170,6 @@ def manage_cheat_sheets():
                     st.session_state.current_cheat_sheet = None
                 del st.session_state.cheat_sheets[selected_sheet]
                 st.rerun()
-
 def main():
     st.set_page_config(page_title="AI Tutor with Cheat Sheet", layout="wide")
     
@@ -186,7 +182,13 @@ def main():
         ]
     if "current_title" not in st.session_state:
         st.session_state.current_title = "Untitled Cheat Sheet"
+    if "cheat_sheets" not in st.session_state:
+        st.session_state.cheat_sheets = {}
+    if "current_cheat_sheet" not in st.session_state:
+        st.session_state.current_cheat_sheet = None
 
+    # Print debug information
+    print("Current session state:", {k: v for k, v in st.session_state.items() if k != "messages"})
     st.title("AI Tutor with Dynamic Cheat Sheet")
     
     # chat and cheat columns
