@@ -71,22 +71,14 @@ def get_openai_response(query):
     Gets a response from OpenAI with conversation history.
     """
     try:
-        # Add the new user query to messages
-        st.session_state.messages.append({"role": "user", "content": query})
-        
         # Get completion from OpenAI
         response = openai.chat.completions.create(
-            messages=st.session_state.messages,
+            messages=st.session_state.messages,  # Use the current message history
             model="gpt-4o-mini",
         )
         
-        # Get the response
-        answer = response.choices[0].message.content.strip()
-        
-        # Add the assistant's response to the message history
-        st.session_state.messages.append({"role": "assistant", "content": answer})
-        
-        return answer
+        # Return the response
+        return response.choices[0].message.content.strip()
     except Exception as e:
         print(f"ERROR - OpenAI call failed: {str(e)}")
         return f"Error fetching response: {str(e)}"

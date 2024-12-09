@@ -13,23 +13,21 @@ if "messages" not in st.session_state:
 
 def display_chat_history():
     """Display the chat history in the interface."""
-    for message in st.session_state.messages[1:]:  # Skip the system message
+    # Skip the first system message
+    for message in st.session_state.messages[1:]:  
         if message["role"] == "user":
             st.write(f"🧑 **You:** {message['content']}")
-        else:
-            # Get the response content
+        elif message["role"] == "assistant":
             content = message['content'].strip()
             
-            # Replace LaTeX-style math notation with proper rendering
+            # Replace LaTeX-style math notation
             content = content.replace('\\[', '$$')
             content = content.replace('\\]', '$$')
             content = content.replace('\\(', '$')
             content = content.replace('\\)', '$')
-            
-            # Replace \mathbb{R} with ℝ
             content = content.replace('\\mathbb{R}', 'ℝ')
             
-            # Replace other common math symbols
+            # Handle math replacements
             math_replacements = {
                 '\\times': '×',
                 '\\in': '∈',
@@ -61,23 +59,18 @@ def display_chat_history():
             for line in lines:
                 if line.strip().startswith('```'):
                     if in_code_block:
-                        # End code block
                         in_code_block = False
                         if code_buffer:
                             formatted_lines.append(f"```python\n{''.join(code_buffer)}```")
                             code_buffer = []
                     else:
-                        # Start code block
                         in_code_block = True
                 elif in_code_block:
                     code_buffer.append(line + '\n')
                 else:
                     formatted_lines.append(line)
             
-            # Join the formatted lines
             formatted_content = '\n'.join(formatted_lines)
-            
-            # Display the message
             st.write(f"🤖 **Assistant:** {formatted_content}")
             
 def save_current_cheat_sheet():
@@ -147,6 +140,10 @@ def main():
     st.set_page_config(page_title="AI Tutor with Cheat Sheet", layout="wide")
     if "cheat_sheet_format" not in st.session_state:
         st.session_state.cheat_sheet_format = {}
+    if "messages" not in st.session_state:
+        st.session_state.messages = [
+            {"role": "system", "content": "You are a knowledgeable tutor who maintains context across conversations. Build upon previous discussions and provide comprehensive, connected explanations."}
+        ]
 
     st.title("AI Tutor with Dynamic Cheat Sheet")
     
@@ -154,8 +151,8 @@ def main():
     chat_col, cheatsheet_col = st.columns([2, 1])
     
     with chat_col:
-        # Display chat history first
-        display_chat_history()
+        # Create placeholder for chat history
+        chat_placeholder = st.empty()
         
         # Create a form for the input
         with st.form(key='query_form', clear_on_submit=True):
@@ -166,27 +163,31 @@ def main():
                 submitted = st.form_submit_button("Submit")
             
             if submitted and query.strip():
-                # Store the user's message
+                # Add user message
                 st.session_state.messages.append({"role": "user", "content": query})
                 
-                # Fetch and store the response
+                # Get response
                 answer = get_openai_response(query)
                 
-                # Store the assistant's response
+                # Add assistant message
                 st.session_state.messages.append({"role": "assistant", "content": answer})
-                st.write(answer)
                 
-                # Update the cheat sheet
+                # Update cheat sheet
                 structured_response = summarize_with_structure(answer)
                 update_cheat_sheet(
                     cheat_sheet_format=st.session_state.cheat_sheet_format,
                     question=query,
                     structured_response=structured_response,
                 )
+                
+                # Clear the form
+                query = ""
+        
+        # Display chat history after form submission
+        display_chat_history()
         
         if st.button("Clear Conversation"):
-            st.session_state.messages = [st.session_state.messages[0]]  # Keep only the system message
-            st.rerun()
+            st.session_state.messages = [st.session_state.messages[0]]
 
     with cheatsheet_col:
         # Display current cheat sheet
