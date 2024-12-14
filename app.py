@@ -1,9 +1,9 @@
 import streamlit as st
 from openAiHelper import get_openai_response, summarize_with_structure
-from CheatSheet import update_cheat_sheet, display_cheat_sheet
+from CheatSheet import update_cheat_sheet, display_cheat_sheet, add_to_cheat_sheet
 from datetime import datetime
 
-# Initialize session state variables
+# create the state session variables
 if "cheat_sheets" not in st.session_state:
     st.session_state.cheat_sheets = {}
 if "current_cheat_sheet" not in st.session_state:
@@ -12,9 +12,12 @@ if "messages" not in st.session_state:
     st.session_state.messages = [
         {"role": "system", "content": "You are a knowledgeable tutor who maintains context across conversations. Build upon previous discussions and provide comprehensive, connected explanations."}
     ]
+#only used if info is appended to cheat sheet
+if "append_counter" not in st.session_state:
+    st.session_state.append_counter = 0
 
-def display_chat_history():
-    """Display the chat history in the interface with most recent messages at the top."""
+def display_chat_history(): #shows the chat history with newest at the top, oldest at the bottom
+    
     messages_to_display = st.session_state.messages[1:]
     
     conversation_pairs = []
@@ -23,12 +26,16 @@ def display_chat_history():
             conversation_pairs.append((messages_to_display[i], messages_to_display[i + 1]))
     
     for user_msg, assistant_msg in reversed(conversation_pairs):
-        # display user message
+        # put the user message and assistant, followed by assistant response
         st.write(f"🧑 **You:** {user_msg['content']}")
-        # display response
+        st.write("🤖 **Assistant:**")
+        
+        # add note for appending content
+        st.caption("Click the box to add content to your Cheat Sheet")
+        
         content = assistant_msg['content'].strip()
         
-        # latex formatting
+        # hard coded latex formatting
         content = content.replace('\\[', '$$')
         content = content.replace('\\]', '$$')
         content = content.replace('\\(', '$')
@@ -53,59 +60,53 @@ def display_chat_history():
             '\\pi': 'π',
             '\\infty': '∞'
         }
-        
+        # parse the string into latex
         for latex, symbol in math_replacements.items():
             content = content.replace(latex, symbol)
         
-        # code formatting
-        lines = content.split('\n')
-        formatted_lines = []
-        in_code_block = False
-        code_buffer = []
-        
-        for line in lines:
-            if line.strip().startswith('```'):
-                if in_code_block:
-                    in_code_block = False
-                    if code_buffer:
-                        formatted_lines.append(f"```python\n{''.join(code_buffer)}```")
-                        code_buffer = []
-                else:
-                    in_code_block = True
-            elif in_code_block:
-                code_buffer.append(line + '\n')
-            else:
-                formatted_lines.append(line)
-        
-        formatted_content = '\n'.join(formatted_lines)
-        st.write(f"🤖 **Assistant:** {formatted_content}")
+        # put the content into corresponding section of cheat sheet
+        sections = content.split('\n\n')
+        for idx, section in enumerate(sections):
+            if section.strip():
+                col1, col2 = st.columns([0.1, 0.9])
+                
+                with col1:
+                    if st.button('+', key=f"btn_{hash(section)}_{idx}"):
+                        add_to_cheat_sheet(section, content_type=None)
+                        st.rerun()
+                
+                with col2:
+                    if section.strip().startswith('```'):
+                        # code handler
+                        code_content = section.replace('```python', '').replace('```', '').strip()
+                        st.code(code_content)
+                    else:
+                        # other text
+                        st.markdown(section)
         
         st.markdown("---")
 
 def load_cheat_sheet(key):
-    """Load a previously saved cheat sheet"""
+    #loading previous cheat sheet into current session
     if key in st.session_state.cheat_sheets:
         st.session_state.cheat_sheet_format = st.session_state.cheat_sheets[key].copy()
         st.session_state.current_cheat_sheet = key
-        # Extract title from key (remove timestamp)
         title = key.split(" (")[0]
         st.session_state.current_title = title
 
 def save_current_cheat_sheet():
-    """Save the current cheat sheet with proper title handling"""
+    #save cheat sheet in cheat sheet manager
     if st.session_state.cheat_sheet_format:  # Only save if there's content
         timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         title = st.session_state.get("current_title", "Untitled Cheat Sheet")
         key = f"{title} ({timestamp})"
-        
-        # Create a deep copy of the cheat sheet format
         st.session_state.cheat_sheets[key] = st.session_state.cheat_sheet_format.copy()
         st.session_state.current_cheat_sheet = key
         return True
     return False
 
 def manage_cheat_sheets():
-    """Interface for managing multiple cheat sheets"""
+    #Cheat Sheet Manager
     st.sidebar.markdown("---")
     st.sidebar.subheader("Cheat Sheet Manager")
 
@@ -119,6 +120,7 @@ def manage_cheat_sheets():
             {"role": "system", "content": "You are a knowledgeable tutor who maintains context across conversations. Build upon previous discussions and provide comprehensive, connected explanations."}
         ]
         st.session_state.current_title = "Untitled Cheat Sheet"
+        st.session_state.append_counter = 0
         st.rerun()
 
     # Title input with forced default value when needed
@@ -186,16 +188,18 @@ def main():
         st.session_state.cheat_sheets = {}
     if "current_cheat_sheet" not in st.session_state:
         st.session_state.current_cheat_sheet = None
+    #only used if info is appended to cheat sheet
+    if "append_counter" not in st.session_state:
+        st.session_state.append_counter = 0
 
-    # Print debug information
-    print("Current session state:", {k: v for k, v in st.session_state.items() if k != "messages"})
+ 
     st.title("AI Tutor with Dynamic Cheat Sheet")
     
     # chat and cheat columns
     chat_col, cheatsheet_col = st.columns([2, 1])
     
     with chat_col:        
-        # Create a form for the input
+        # query input form
         with st.form(key='query_form', clear_on_submit=True):
             query = st.text_input("Ask a question:", key="query_input")
             col1, col2 = st.columns([1, 4])
@@ -203,6 +207,7 @@ def main():
             with col1:
                 submitted = st.form_submit_button("Submit")
             
+            #if user presses submit
             if submitted and query.strip():
                 # add query to the session
                 st.session_state.messages.append({"role": "user", "content": query})

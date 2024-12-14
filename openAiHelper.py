@@ -2,13 +2,13 @@ import openai
 import json
 import streamlit as st
 
-
 if "current_section" not in st.session_state:
     st.session_state.current_section = None
-# Try to get API key from multiple sources
+
 api_key = None
 
-# First try Streamlit secrets
+#get key from streamlit secrets
+#or hard code in your api key
 
 api_key = st.secrets["OPENAI_API_KEY"]
 
@@ -18,22 +18,19 @@ openai.api_key = api_key
 def get_openai_response(query):
 
     try:
-        # Get completion from OpenAI
         response = openai.chat.completions.create(
-            messages=st.session_state.messages,  # Use the current message history
+            messages=st.session_state.messages,
             model="gpt-4o-mini",
         )
         
-        # Return the response
+        # get parsed response
         return response.choices[0].message.content.strip()
     except Exception as e:
         print(f"ERROR - OpenAI call failed: {str(e)}")
         return f"Error fetching response: {str(e)}"
 
 def summarize_with_structure(response):
-    """
-    Summarizes and organizes the OpenAI response into a structured format.
-    """
+  # use the response as query to create cheet sheet, used claude to help create the summary request structure 
     try:
         summary_request = f"""
         Create a structured cheat sheet from the following content:
@@ -86,20 +83,20 @@ def summarize_with_structure(response):
 
         content = chat_response.choices[0].message.content.strip()
         
-        # Clean up the response to ensure it's valid JSON
+        # parse the json content
         start_idx = content.find('{')
         end_idx = content.rfind('}') + 1
         
         if start_idx != -1 and end_idx != -1:
             json_str = content[start_idx:end_idx]
             try:
-                # Parse the JSON string
+                # if its a valid json string, parse it
                 structured_content = json.loads(json_str)
                 print("Structured content:", json.dumps(structured_content, indent=2))
                 return structured_content
+            #otherwise, structure the string into a simple "topic" and "content"
             except json.JSONDecodeError as e:
                 print(f"JSON parsing error: {str(e)}")
-                # Create a basic structure if parsing fails
                 return {
                     "Topic": {
                         "Content": response.strip()

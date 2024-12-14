@@ -3,20 +3,27 @@ from docx import Document
 from docx.shared import Pt, Inches, RGBColor
 from docx.enum.text import WD_ALIGN_PARAGRAPH
 import streamlit as st
+from pylatexenc.latex2text import LatexNodes2Text
 
 def clean_text(text):
+    #clean text from latex to json
     if text is None:
         return ""
     
-    # make sure input is a string
-    cleaned = str(text)
-    # parse JSON
-    cleaned = cleaned.replace('{', '').replace('}', '')
+    latex_converter = LatexNodes2Text(math_mode='text', 
+                                    keep_braced_groups=False)
+    cleaned = latex_converter.latex_to_text(str(text))
+    
+    # Remove any extra quotes or brackets
     cleaned = cleaned.replace('[', '').replace(']', '')
     cleaned = cleaned.replace('\'', '').replace('\"', '')
-    cleaned = cleaned.replace('\\', '')
-    cleaned = ' '.join(cleaned.split())
-    return cleaned.strip()
+    
+    # line breaks and spacing
+    lines = cleaned.split('\n')
+    cleaned_lines = [line.strip() for line in lines if line.strip()]
+    result = '\n'.join(cleaned_lines)
+    
+    return result
 
 def create_cheat_sheet_docx(cheat_sheet_data, font="Calibri", font_size=11):
     doc = Document() #word doc
@@ -46,7 +53,7 @@ def create_cheat_sheet_docx(cheat_sheet_data, font="Calibri", font_size=11):
                     run.bold = True
                     run.font.size = Pt(font_size)
                     
-                    #check if the details are code or bullet point info
+                    #check if the details are code or text
                     if isinstance(details, dict):
                         for key, value in details.items():
                             if key == "Code":
@@ -88,6 +95,55 @@ def create_cheat_sheet_docx(cheat_sheet_data, font="Calibri", font_size=11):
     doc_buffer.seek(0)
     return doc_buffer
 
+
+
+if "append_counter" not in st.session_state:
+    st.session_state.append_counter = 0
+
+def get_content_label(section):
+    #add label to the appended sections (based on what section they were appended from)
+    section = section.lower().strip()
+    
+    # check what type of content is being added (for the header)
+    if section.startswith('# ') or section.startswith('## '):
+        return "Definition"
+    elif any(term in section for term in ['formula', 'equation', '\\frac', '\\sigma']):
+        return "Formula"
+    elif section.startswith('```'):
+        return "Code Example"
+    elif section.startswith(('1.', '2.', '3.')):
+        return "Key Point"
+    elif 'example' in section:
+        return "Example"
+    else:
+        return "Additional Info"
+
+def add_to_cheat_sheet(section, content_type):
+    # add the selected content to the cheat sheet.
+    try:
+        st.session_state.append_counter += 1
+        
+        label = get_content_label(section)
+        section = section.replace('**', '')
+        
+        
+        new_content = {
+            f"{label} {st.session_state.append_counter}": {
+                label: section.strip() + "\n"
+            }
+        }
+        
+        update_cheat_sheet(
+            cheat_sheet_format=st.session_state.cheat_sheet_format,
+            question="",
+            structured_response=new_content
+        )
+        
+        return True
+    except Exception as e:
+        st.error(f"Error adding to cheat sheet: {str(e)}")
+        return False
+
 def update_cheat_sheet(cheat_sheet_format, question, structured_response):
     def deep_merge(target, source):
         for key, value in source.items():
@@ -115,9 +171,6 @@ def update_cheat_sheet(cheat_sheet_format, question, structured_response):
 def display_cheat_sheet(cheat_sheet_data):
     st.sidebar.title("Cheat Sheet")
     
-    # Add a debug print to verify the data is actually empty
-    print("Current cheat sheet data:", cheat_sheet_data)
-    
     if not cheat_sheet_data:
         st.sidebar.write("No cheat sheet yet. Start asking questions!")
         return
@@ -140,12 +193,9 @@ def display_cheat_sheet(cheat_sheet_data):
         # download the cheat sheet
         with st.spinner("Preparing download..."):
             try:
-                # title = next(iter(cheat_sheet_data.keys()))
                 cheat_sheet_file = create_cheat_sheet_docx(cheat_sheet_data)
-                if "current_title" in st.session_state:
-                    file_name = f"{clean_text(st.session_state.current_title)}.docx"
-                else:
-                    file_name = f"{clean_text(next(iter(cheat_sheet_data.keys())))}.docx"
+                # Use current title directly for the filename
+                file_name = f"{st.session_state.current_title}.docx"
                 st.sidebar.download_button(
                     label="Download Cheat Sheet",
                     data=cheat_sheet_file,
